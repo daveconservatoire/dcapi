@@ -13,7 +13,7 @@
     (reduce #(assoc % (keyword %2) (gobj/get obj %2)) {} keys)))
 
 (defn query
-  ([connection query] (query connection query []))
+  ([connection q] (query connection q []))
   ([connection query args]
    (let [c (promise-chan)]
      (.query connection query (clj->js args)
