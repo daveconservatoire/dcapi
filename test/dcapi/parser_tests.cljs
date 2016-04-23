@@ -52,6 +52,8 @@
     (go
       (is (= (->> (p/parse {:db ts/connection} [{[:course/by-id 4] [:id :title]}]) <!)
              {[:course/by-id 4] {:id 4, :title "Reading Music"}}))
+      (is (= (->> (p/parse {:db ts/connection} [{[:course/by-id 45848] [:id :title]}]) <!)
+             {[:course/by-id 45848] [:error :row-not-found]}))
       (done))))
 
 (comment (run-tests))

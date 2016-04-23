@@ -132,7 +132,8 @@
   (go
     (if-let [{:keys [name]} (get db-specs table)]
       (-> (query-sql env "SELECT * FROM ?? WHERE id = ?" [name id]) <!
-          (first))
+          (first)
+          (or [:error :row-not-found]))
       [:error :invalid-table (str "[Query Row] No specs for table " table)])))
 
 (defn query-table
