@@ -47,4 +47,11 @@
              [{:id 2, :title "Getting Started" :course {:id 7}}]))
       (done))))
 
+(deftest test-parse-read-ident
+  (async done
+    (go
+      (is (= (->> (p/parse {:db ts/connection} [{[:course/by-id 4] [:id :title]}]) <!)
+             {[:course/by-id 4] {:id 4, :title "Reading Music"}}))
+      (done))))
+
 (comment (run-tests))

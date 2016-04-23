@@ -177,15 +177,19 @@
 
 ;; ROOT READS
 
-(defmulti read om/dispatch)
+(defn read [{:keys [ast] :as env} key params]
+  (cond
+    (= "by-id" (name key))
+    (let [table (keyword (namespace key))
+          [_ id] (:key ast)]
+      {:value (query-row (assoc env :table table) id)})
 
-(defmethod read :default [_ _ _] {:value [:error :not-found]})
+    :else
+    (case key
+      :app/courses {:value (query-table env :course)}
+      :app/topics {:value (query-table env :topic)}
 
-(defmethod read :app/courses [{:keys [ast] :as env} _ params]
-  {:value (query-table env :course)})
-
-(defmethod read :app/topics [{:keys [ast] :as env} _ params]
-  {:value (query-table env :topic)})
+      {:value [:error :not-found]})))
 
 (def parser (om/parser {:read read}))
 
