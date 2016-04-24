@@ -23,10 +23,19 @@
 (defn create-connection [options]
   (knex (clj->js options)))
 
+(defn promise->chan [promise]
+  (let [c (promise-chan)]
+    (.then promise #(put! c (js->clj % :keywordize-keys true)) #(put! c %))
+    c))
+
 (defn query
   ([connection table] (query connection table []))
   ([connection table cmds]
-   (let [c (promise-chan)
-         builder (call-chain (connection table) cmds)]
-     (.then builder #(put! c (js->clj % :keywordize-keys true)) #(put! c %))
-     c)))
+   (promise->chan (call-chain (connection table) cmds))))
+
+(defn raw
+  ([connection sql args]
+   (go
+     (let [res (<! (promise->chan (.raw connection sql (clj->js args))))]
+       (->> (first res)
+            (map convert-object))))))

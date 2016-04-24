@@ -45,14 +45,14 @@
   (go
     (let [read-table (fn read-table [table]
                        (go
-                         (let [fields (->> (dcapi.mysql/query connection "DESCRIBE ??" table) <!
+                         (let [fields (->> (knex/raw connection "DESCRIBE ??" [table]) <!
                                            (map (comp keyword :Field))
                                            (set))]
                            {:name   table
                             :key    (keyword (-> (gstr/toSelectorCase (str table))
                                                  (.replace #"^-" "")))
                             :fields fields})))
-          tables (->> (dcapi.mysql/query connection "SHOW TABLES") <!
+          tables (->> (knex/raw connection "SHOW TABLES" []) <!
                       (map :Tables_in_dcsite))]
       (->> (map read-table tables)
            (read-chan-seq identity) <!
@@ -173,15 +173,18 @@
 
 ;; ROOT READS
 
+(defn ast-key-id [ast] (some-> ast :key second))
+
 (defn read [{:keys [ast] :as env} key params]
   (cond
     (= "by-id" (name key))
-    (let [table (keyword (namespace key))
-          [_ id] (:key ast)]
-      {:value (query-sql-first (assoc env :table table) [[:where {:id id}]])})
+    (let [table (keyword (namespace key))]
+      {:value (query-sql-first (assoc env :table table) [[:where {:id (ast-key-id ast)}]])})
 
     :else
     (case key
+      :topic/by-slug {:value (query-sql-first (assoc env :table :topic)
+                                              [[:where {:urltitle (ast-key-id ast)}]])}
       :app/courses {:value (query-table env :course)}
       :app/topics {:value (query-table env :topic)}
 
