@@ -7,10 +7,12 @@
   },
   "scripts": {
     "start": "",
-    "dev": "node target/server_dev/dcapi.js"
+    "dev": "node target/server_dev/dcapi.js",
+    "test": "node target/server_test/dcapi.js"
   },
   "dependencies": {
     "express": "^4.13.4",
+    "knex": "^0.10.0",
     "mysql": "^2.10.2"
   },
   "devDependencies": {

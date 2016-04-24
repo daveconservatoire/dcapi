@@ -26,16 +26,18 @@
 (deftest test-query-row
   (async done
     (go
-      (is (= (<! (p/query-row {:db    ts/connection
-                               :table :course
-                               :ast   (om/query->ast [:id :title])} 4))
+      (is (= (<! (p/query-sql-first {:db    ts/connection
+                                     :table :course
+                                     :ast   (om/query->ast [:id :title])}
+                                    [[:where {:id 4}]]))
              {:id 4, :title "Reading Music"}))
 
-      (is (= (<! (p/query-row {:db    ts/connection
-                               :table :course
-                               :ast   (om/query->ast [:id (list
-                                                            {:topics [:id :title]}
-                                                            {:limit 2})])} 4))
+      (is (= (<! (p/query-sql-first {:db    ts/connection
+                                     :table :course
+                                     :ast   (om/query->ast [:id (list
+                                                                  {:topics [:id :title]}
+                                                                  {:limit 2})])}
+                                    [[:where {:id 4}]]))
              {:id 4 :topics [{:id 18 :title "Getting Started"} {:id 19 :title "Staff and Clefs"}]}))
       (done))))
 

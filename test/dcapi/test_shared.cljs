@@ -1,10 +1,11 @@
 (ns dcapi.test-shared
-  (:require [dcapi.mysql :as mysql]))
+  (:require [knex.core :as knex]))
 
 (defonce connection
-  (doto (mysql/create-connection {:host     "localhost"
-                                  :user     "root"
-                                  :password "root"
-                                  :database "dcsite"
-                                  :port     8889})
-    (.connect)))
+  (knex/create-connection
+    {:client     "mysql"
+     :connection {:host     "localhost"
+                  :user     "root"
+                  :password "root"
+                  :database "dcsite"
+                  :port     8889}}))

@@ -6,7 +6,7 @@
             [cljs.core.async :as async :refer [<! >! put! close!]]
             [cljs.core.async.impl.protocols :refer [Channel]]
             [goog.string :as gstr]
-            [dcapi.mysql :as mysql]))
+            [knex.core :as knex]))
 
 ;; SUPPORT FUNCTIONS
 
@@ -120,40 +120,35 @@
         (select-keys accessors)
         (read-chan-values))))
 
-(defn query-sql [{:keys [table db] :as env} sql args]
+(defn query-sql [{:keys [table db] :as env} cmds]
   (if-let [{:keys [name] :as table-spec} (get db-specs table)]
     (go
-      (let [rows (<! (mysql/query db sql args))
+      (let [rows (<! (knex/query db name cmds))
             env (assoc env :table table-spec)]
         (<! (read-chan-seq #(parse-row env %) rows))))
     [:error :invalid-table (str "[Query SQL] No specs for table " table)]))
 
-(defn query-row [{:keys [table] :as env} id]
+(defn query-sql-first [env cmds]
   (go
-    (if-let [{:keys [name]} (get db-specs table)]
-      (-> (query-sql env "SELECT * FROM ?? WHERE id = ?" [name id]) <!
-          (first)
-          (or [:error :row-not-found]))
-      [:error :invalid-table (str "[Query Row] No specs for table " table)])))
+    (-> (query-sql env cmds) <!
+        (first)
+        (or [:error :row-not-found]))))
 
 (defn query-table
   [{:keys [ast] :as env} table]
   (if-let [{:keys [name]} (get db-specs table)]
     (let [{:keys [limit where]} (:params ast)
-          limit (or limit 50)
-          where-clause (if where (str " WHERE " (str/join "," (map #(str "?? = ?") where))))]
+          limit (or limit 50)]
       (query-sql (assoc env :table table)
-                 (cond-> "SELECT * FROM ??"
-                   where (str where-clause)
-                   true (str " LIMIT ?"))
-                 (concat [name] (flatten (seq where)) [limit])))
+                 (cond-> [[:limit limit]]
+                   where (conj [:where where]))))
     [:error :invalid-table (str "[Query Table] No specs for table " table)]))
 
 ;; RELATIONAL MAPPING
 
 (defn has-one [env foreign-table local-field]
   (let [foreign-id (get-in env [:row local-field])]
-    (query-row (assoc env :table foreign-table) foreign-id)))
+    (query-sql-first (assoc env :table foreign-table) [[:where {:id foreign-id}]])))
 
 (defn has-many [{:keys [row] :as env} foreign-table local-field]
   (query-table
@@ -183,7 +178,7 @@
     (= "by-id" (name key))
     (let [table (keyword (namespace key))
           [_ id] (:key ast)]
-      {:value (query-row (assoc env :table table) id)})
+      {:value (query-sql-first (assoc env :table table) [[:where {:id id}]])})
 
     :else
     (case key

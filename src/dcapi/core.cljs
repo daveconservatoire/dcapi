@@ -2,8 +2,9 @@
   (:require-macros [cljs.core.async.macros :refer [go]])
   (:require [cljs.nodejs :as nodejs]
             [cljs.core.async :refer [chan <! put! promise-chan]]
-            [om.next :as om]
-            [dcapi.mysql :as mysql]))
+            [dcapi.parser :as parser]
+            [cljs.reader :refer [read-string]]
+            [knex.core :as knex]))
 
 (nodejs/enable-util-print!)
 
@@ -11,29 +12,35 @@
 (defonce http (nodejs/require "http"))
 
 (defn express-get [app pattern f] (.get app pattern f))
+(defn express-post [app pattern f] (.post app pattern f))
 
 (defonce connection
-  (mysql/create-connection {:host     "localhost"
-                            :user     "root"
-                            :password "root"
-                            :database "dcsite"
-                            :port     8889}))
+  (knex/create-connection
+    {:client     "mysql"
+     :connection {:host     "localhost"
+                  :user     "root"
+                  :password "root"
+                  :database "dcsite"
+                  :port     8889}}))
 
 (def app (express))
 
-(defn parser-read [env key params]
-  (case key
-    ))
+(defn read-stream [s]
+  (let [c (promise-chan)
+        out (atom "")]
+    (.setEncoding s "utf8")
+    (.on s "data" (fn [chunk] (swap! out str chunk)))
+    (.on s "end" (fn [] (put! c @out)))
+    c))
 
-(def parser (om/parser {:read parser-read}))
-
-(express-get app "/api"
+(express-post app "/api"
   (fn [req res]
-
-    (.send res "Api")))
+    (go
+      (let [tx (-> (read-stream req) <!
+                   (read-string))]
+        (.send res (pr-str (<! (parser/parse {:db connection} tx))))))))
 
 (defn -main []
-  (.connect connection)
   (doto (.createServer http #(app %1 %2))
     (.listen 3000)))
 
