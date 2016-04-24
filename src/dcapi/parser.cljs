@@ -126,7 +126,7 @@
       (let [rows (<! (knex/query db name cmds))
             env (assoc env :table table-spec)]
         (<! (read-chan-seq #(parse-row env %) rows))))
-    [:error :invalid-table (str "[Query SQL] No specs for table " table)]))
+    (throw (str "[Query SQL] No specs for table " table))))
 
 (defn query-sql-first [env cmds]
   (go
@@ -142,7 +142,7 @@
       (query-sql (assoc env :table table)
                  (cond-> [[:limit limit]]
                    where (conj [:where where]))))
-    [:error :invalid-table (str "[Query Table] No specs for table " table)]))
+    (throw (str "[Query Table] No specs for table " table))))
 
 ;; RELATIONAL MAPPING
 
