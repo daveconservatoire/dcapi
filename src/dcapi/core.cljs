@@ -36,9 +36,12 @@
 (express-post app "/api"
   (fn [req res]
     (go
-      (let [tx (-> (read-stream req) <!
-                   (read-string))]
-        (.send res (pr-str (<! (parser/parse {:db connection} tx))))))))
+      (try
+        (let [tx (-> (read-stream req) <!
+                     (read-string))]
+          (.send res (pr-str (<! (parser/parse {:db connection} tx)))))
+        (catch :default e
+          (.send res (str "Error: " e)))))))
 
 (defn -main []
   (doto (.createServer http #(app %1 %2))
