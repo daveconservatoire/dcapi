@@ -4,6 +4,7 @@
             [cljs.core.async :refer [chan <! put! promise-chan]]
             [dcapi.parser :as parser]
             [cljs.reader :refer [read-string]]
+            cljs.pprint
             [knex.core :as knex]))
 
 (nodejs/enable-util-print!)
@@ -40,6 +41,17 @@
         (let [tx (-> (read-stream req) <!
                      (read-string))]
           (.send res (pr-str (<! (parser/parse {:db connection} tx)))))
+        (catch :default e
+          (.send res (str "Error: " e)))))))
+
+(express-post app "/api-pretty"
+  (fn [req res]
+    (go
+      (try
+        (let [tx (-> (read-stream req) <!
+                     (read-string))]
+          (.send res (with-out-str
+                       (cljs.pprint/pprint (<! (parser/parse {:db connection} tx))))))
         (catch :default e
           (.send res (str "Error: " e)))))))
 
