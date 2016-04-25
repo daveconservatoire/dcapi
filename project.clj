@@ -12,6 +12,7 @@
                  [org.omcljs/om "1.0.0-alpha32"]
                  [org.clojure/core.async "0.2.374"]]
 
+  :plugins [[lein-cljsbuild "1.1.3"]]
   :source-paths ["src"]
 
   :clean-targets ["server.js" "target"]
@@ -19,8 +20,7 @@
   :cljsbuild {:builds [{:id           "dev"
                         :source-paths ["src"]
                         :figwheel     true
-                        :compiler     {
-                                       :main          dcapi.core
+                        :compiler     {:main          dcapi.core
                                        :output-to     "target/server_dev/dcapi.js"
                                        :output-dir    "target/server_dev"
                                        :target        :nodejs
@@ -29,8 +29,7 @@
                        {:id           "test"
                         :source-paths ["src" "test"]
                         :figwheel     true
-                        :compiler     {
-                                       :main          dcapi.suite
+                        :compiler     {:main          dcapi.suite
                                        :output-to     "target/server_test/dcapi.js"
                                        :output-dir    "target/server_test"
                                        :target        :nodejs
@@ -38,8 +37,8 @@
                                        :source-map    true}}
                        {:id           "prod"
                         :source-paths ["src"]
-                        :compiler     {
+                        :compiler     {:main          dcapi.core
                                        :output-to     "server.js"
                                        :output-dir    "target/server_prod"
                                        :target        :nodejs
-                                       :optimizations :simple}}]})
+                                       :optimizations :none}}]})

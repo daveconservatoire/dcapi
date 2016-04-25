@@ -6,7 +6,8 @@
     "node": "5.10.1"
   },
   "scripts": {
-    "start": "",
+    "build-js": "lein cljsbuild once prod",
+    "start": "node server.js",
     "dev": "node target/server_dev/dcapi.js",
     "test": "node target/server_test/dcapi.js"
   },
