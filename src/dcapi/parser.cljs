@@ -137,11 +137,12 @@
 (defn query-table
   [{:keys [ast] :as env} table]
   (if-let [{:keys [name]} (get db-specs table)]
-    (let [{:keys [limit where]} (:params ast)
+    (let [{:keys [limit where sort]} (:params ast)
           limit (or limit 50)]
       (query-sql (assoc env :table table)
                  (cond-> [[:limit limit]]
-                   where (conj [:where where]))))
+                   where (conj [:where where])
+                   sort (conj (concat [:orderBy] sort)))))
     (throw (str "[Query Table] No specs for table " table))))
 
 ;; RELATIONAL MAPPING
@@ -150,13 +151,14 @@
   (let [foreign-id (get-in env [:row local-field])]
     (query-sql-first (assoc env :table foreign-table) [[:where {:id foreign-id}]])))
 
-(defn has-many [{:keys [row] :as env} foreign-table local-field]
+(defn has-many [{:keys [row] :as env} foreign-table local-field & [params]]
   (query-table
-    (update-in env [:ast :params :where]
-               #(assoc (or % {}) (name local-field) (:id row)))
+    (cond-> (update-in env [:ast :params :where]
+                       #(assoc (or % {}) (name local-field) (:id row)))
+      (:sort params) (update-in [:ast :params :sort] #(or % (:sort params))))
     foreign-table))
 
-(defmethod row-vattribute [:course :topics] [env] (has-many env :topic :courseId))
+(defmethod row-vattribute [:course :topics] [env] (has-many env :topic :courseId {:sort ["sortorder"]}))
 (defmethod row-vattribute [:course :lessons] [env] (has-many env :lesson :seriesno))
 
 (defmethod row-vattribute [:topic :course] [env] (has-one env :course :courseId))
