@@ -9,7 +9,7 @@
                  [figwheel-sidecar "0.5.0-2" :exclusions [clj-time joda-time org.clojure/tools.reader] :scope "test"]
                  [com.rpl/specter "0.9.3"]
                  [lein-doo "0.1.6" :scope "test"]
-                 [org.omcljs/om "1.0.0-alpha32"]
+                 [org.omcljs/om "1.0.0-alpha36"]
                  [org.clojure/core.async "0.2.374"]]
 
   :plugins [[lein-cljsbuild "1.1.3"]]

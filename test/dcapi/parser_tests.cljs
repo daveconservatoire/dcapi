@@ -58,4 +58,13 @@
              {[:course/by-id 45848] [:error :row-not-found]}))
       (done))))
 
+(deftest test-parse-read-lesson-by-slug
+  (async done
+    (go
+      (is (= (->> (p/parse {:db ts/connection} [{[:lesson/by-slug "percussion"] [:id :title]}]) <!)
+             {[:lesson/by-slug "percussion"] {:id 9, :title "Percussion"}}))
+      (is (= (->> (p/parse {:db ts/connection} [{[:lesson/by-slug "invalid"] [:id :title]}]) <!)
+             {[:lesson/by-slug "invalid"] [:error :row-not-found]}))
+      (done))))
+
 (comment (run-tests))

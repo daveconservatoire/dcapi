@@ -71,21 +71,10 @@
     :name   "SearchTerm"
     :fields #{:frequency :term :id}},
 
-   :user-exercise-answer
-   {:key    :user-exercise-answer,
-    :name   "UserExerciseAnswer",
-    :fields #{:exerciseId :attemptNumber :timeTaken :countHints :id :userId :complete
-              :timestamp}},
-
    :topic
    {:key    :topic,
     :name   "Topic",
     :fields #{:urltitle :title :id :colour :sortorder :courseId}},
-
-   :user-video-view
-   {:key    :user-video-view,
-    :name   "UserVideoView",
-    :fields #{:status :id :userId :position :timestamp :lessonId}},
 
    :course
    {:key    :course,
@@ -96,13 +85,7 @@
    {:key    :lesson,
     :name   "Lesson",
     :fields #{:description :topicno :urltitle :youtubeid :keywords :title :seriesno
-              :lessonno :id :filetype :timestamp}},
-
-   :user
-   {:key    :user,
-    :name   "User",
-    :fields #{:email :firstip :subamount :name :biog :username :points :lastActivity :id
-              :l1badgeCount :joinDate}}})
+              :lessonno :id :filetype :timestamp}}})
 
 (defmulti row-vattribute (fn [{:keys [ast row]}] [(:db/table row) (:key ast)]))
 
@@ -134,6 +117,9 @@
         (first)
         (or [:error :row-not-found]))))
 
+(defn- ensure-list [x]
+  (if (sequential? x) x [x]))
+
 (defn query-table
   [{:keys [ast] :as env} table]
   (if-let [{:keys [name]} (get db-specs table)]
@@ -142,7 +128,7 @@
       (query-sql (assoc env :table table)
                  (cond-> [[:limit limit]]
                    where (conj [:where where])
-                   sort (conj (concat [:orderBy] sort)))))
+                   sort (conj (concat [:orderBy] (ensure-list sort))))))
     (throw (str "[Query Table] No specs for table " table))))
 
 ;; RELATIONAL MAPPING
@@ -166,6 +152,7 @@
 
 (defmethod row-vattribute [:lesson :course] [env] (has-one env :course :seriesno))
 (defmethod row-vattribute [:lesson :topic] [env] (has-one env :topic :topicno))
+(defmethod row-vattribute [:lesson :playlist-items] [env] (has-many env :playlist-item :relid))
 
 (defmethod row-vattribute [:user :exercice-answer] [env] (has-many env :user-exercise-answer :userId))
 
@@ -186,6 +173,8 @@
     :else
     (case key
       :topic/by-slug {:value (query-sql-first (assoc env :table :topic)
+                                              [[:where {:urltitle (ast-key-id ast)}]])}
+      :lesson/by-slug {:value (query-sql-first (assoc env :table :lesson)
                                               [[:where {:urltitle (ast-key-id ast)}]])}
       :app/courses {:value (query-table env :course)}
       :app/topics {:value (query-table env :topic)}
